@@ -197,9 +197,13 @@ const ChatWindow = ({
     const currentUserIdStr = currentUserId?.toString();
 
     const separatorMsg = safeMessages.find((message) => {
-      const senderId = getSenderId(message);
-      const isOwnMessage = senderId && currentUserIdStr && senderId.toString() === currentUserIdStr;
-      if (isOwnMessage) return false;
+      let msgSenderId = '';
+      if (message.senderId) msgSenderId = message.senderId.toString();
+      else if (message.sender) msgSenderId = (message.sender._id || message.sender).toString();
+
+      const myIdStr = currentUserIdStr || '';
+
+      if (msgSenderId && myIdStr && msgSenderId === myIdStr) return false;
 
       if (!threshold) return true;
       return new Date(message.createdAt) > new Date(threshold);
@@ -657,7 +661,11 @@ const ChatWindow = ({
     setAuditVisible((prev) => !prev);
   };
 
-  const showInput = !isRemovedFromGroup && !chatBlocked && !(chatType === 'group' && isMuted && !canManageGroup);
+  const isParticipant = (participants || []).some((p) => getParticipantId(p) === currentId);
+
+  const showInput =
+    !isRemovedFromGroup && !chatBlocked && !(chatType === 'group' && isMuted && !canManageGroup);
+  const participantMissing = chatType === 'group' && !isParticipant;
   const typingHintVisible = showInput && typingHint;
 
   const jumpToMessage = (messageIdRaw) => {
@@ -878,11 +886,20 @@ const ChatWindow = ({
           const messageId = getMessageId(message);
           const messageIdStr = (messageId?.toString?.() || '').toString();
 
-          const senderId = getSenderId(message);
-          const isMine = senderId && currentId ? senderId === currentId : false;
+          const currentUserIdStr = (currentUserId || '').toString();
+
+          let senderIdStr = '';
+          if (message.senderId) {
+            senderIdStr = message.senderId.toString();
+          } else if (message.sender) {
+            senderIdStr = (message.sender._id || message.sender.id || message.sender).toString();
+          }
+
+          const isMine = senderIdStr === currentUserIdStr;
 
           const sender = message.sender || {};
-          const authorName = sender.displayName || sender.username || 'Участник';
+          const hasSenderInfo = !!message.sender || !!message.senderId;
+          const authorName = sender.displayName || sender.username || (hasSenderInfo ? 'Участник' : 'Неизвестный');
 
           const metaParts = [];
           const formattedRole = formatRole(sender.role);
@@ -905,43 +922,10 @@ const ChatWindow = ({
           const attachments = message.attachments || [];
           const isDeletedForAll = !!message.deletedForAll;
 
-          const createdAtMs = (() => {
-            const raw = message.createdAt;
-
-            const tryParse = (value) => {
-              const ts = new Date(value).getTime();
-              return Number.isNaN(ts) ? null : ts;
-            };
-
-            const firstPass = raw ? tryParse(raw) : null;
-            if (firstPass !== null) return firstPass;
-
-            if (typeof raw === 'string') {
-              const cleaned = raw.replace(',', ' ').trim();
-              const match = cleaned.match(
-                /^(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/
-              );
-              if (match) {
-                const [, dd, mm, yyyy, hh = '00', min = '00', ss = '00'] = match;
-                const parsed = new Date(
-                  Number(yyyy),
-                  Number(mm) - 1,
-                  Number(dd),
-                  Number(hh),
-                  Number(min),
-                  Number(ss)
-                ).getTime();
-                if (!Number.isNaN(parsed)) return parsed;
-              }
-            }
-
-            // UI fallback only; server must enforce real window
-            return Date.now();
-          })();
-
-          const deleteWindowMs = 10 * 60 * 1000;
-          const canDeleteForAll =
-            isMine && !isDeletedForAll && Date.now() - createdAtMs <= deleteWindowMs;
+          const createdAtMs = new Date(message.createdAt).getTime();
+          const isTimeValid =
+            !Number.isNaN(createdAtMs) && Date.now() - createdAtMs <= 10 * 60 * 1000;
+          const canDeleteForAll = isMine && !isDeletedForAll && isTimeValid;
 
           return (
             <div key={messageIdStr || messageId} id={`msg-${messageIdStr || messageId}`}>
@@ -1147,7 +1131,11 @@ const ChatWindow = ({
       )}
 
       <div className="chat-input-bar">
-        {bottomNotice ? (
+        {participantMissing ? (
+          <div className="chat-input-banner">
+            Вы были удалены из этой группы. Вы видите историю, но не можете писать.
+          </div>
+        ) : bottomNotice ? (
           <div className="chat-input-banner">{bottomNotice}</div>
         ) : (
           <>

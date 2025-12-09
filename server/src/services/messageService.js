@@ -1,9 +1,12 @@
+const fs = require('fs');
+const path = require('path');
 const mongoose = require('mongoose');
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const Attachment = require('../models/Attachment');
 const cryptoService = require('./crypto/cryptoService');
 const auditService = require('./auditService');
+const { uploadsRoot } = require('./attachmentService');
 
 const ensureParticipant = (chatDoc, userId, { allowRemoved = false } = {}) => {
   const participantIds = (chatDoc.participants || []).map((id) => id.toString());
@@ -24,6 +27,23 @@ const ensureParticipant = (chatDoc, userId, { allowRemoved = false } = {}) => {
   const error = new Error('Not authorized for this chat');
   error.status = 403;
   throw error;
+};
+
+const unlinkAttachments = async (attachmentIds) => {
+  if (!attachmentIds || attachmentIds.length === 0) return;
+
+  const ids = attachmentIds.map((att) => (att?._id ? att._id : att));
+  const docs = await Attachment.find({ _id: { $in: ids } });
+
+  for (const doc of docs) {
+    if (!doc.storageKey) continue;
+    const fullPath = path.join(uploadsRoot, doc.storageKey);
+    fs.unlink(fullPath, (err) => {
+      if (err && err.code !== 'ENOENT') {
+        console.error('File delete error:', err);
+      }
+    });
+  }
 };
 
 const toMessageDto = (messageDoc, text) => {
@@ -384,8 +404,20 @@ const deleteForMe = async ({ messageId, userId }) => {
 
   if (!alreadyDeleted) {
     message.deletedFor.push(userId);
-    await message.save();
   }
+
+  if (message.attachments && message.attachments.length > 0) {
+    const participantIds = (chat.participants || []).map((id) => id.toString());
+    const deletedIds = (message.deletedFor || []).map((id) => id && id.toString());
+    const allDeleted = participantIds.every((id) => deletedIds.includes(id));
+
+    if (allDeleted) {
+      await unlinkAttachments(message.attachments);
+      message.attachments = [];
+    }
+  }
+
+  await message.save();
 
   return { ok: true };
 };
@@ -426,6 +458,8 @@ const deleteForAll = async ({ messageId, userId }) => {
     throw error;
   }
 
+  await unlinkAttachments(message.attachments);
+  message.attachments = [];
   message.deletedForAll = true;
   message.deletedAt = new Date();
   message.deletedBy = userId;

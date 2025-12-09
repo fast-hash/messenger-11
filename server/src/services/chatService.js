@@ -185,6 +185,18 @@ const getUserChats = async ({ userId }) => {
   return withUnread;
 };
 
+const checkGroupTitleAvailability = async (title) => {
+  if (!title || !title.trim()) return false;
+
+  const escaped = title.trim().replace(/[.*+?^${}()|[\]\\]/g, '\$&');
+  const existing = await Chat.findOne({
+    type: 'group',
+    title: { $regex: new RegExp(`^${escaped}$`, 'i') },
+  });
+
+  return !existing;
+};
+
 const createGroupChat = async ({ title, creatorId, participantIds = [] }) => {
   if (!title || !title.trim()) {
     const error = new Error('Название группы обязательно');
@@ -779,6 +791,7 @@ const updateModeration = async ({ chatId, actorId, actorRole, muteUntil, rateLim
 module.exports = {
   getOrCreateDirectChat,
   getUserChats,
+  checkGroupTitleAvailability,
   createGroupChat,
   listGroupsForUser,
   getGroupDetails,
