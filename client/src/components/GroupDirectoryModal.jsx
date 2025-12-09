@@ -1,5 +1,7 @@
+import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import UserPicker from './UserPicker';
+import httpClient from '../api/httpClient';
 
 const statusLabel = (status) => {
   switch (status) {
@@ -39,6 +41,35 @@ const GroupDirectoryModal = ({
 
   const isMemberStatuses = new Set(['owner', 'admin', 'member']);
   const availableGroups = groups.filter((group) => !isMemberStatuses.has(group.membershipStatus));
+  const [titleStatus, setTitleStatus] = useState('idle');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredGroups = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return availableGroups;
+    return availableGroups.filter((group) => (group.title || '').toLowerCase().includes(query));
+  }, [availableGroups, searchTerm]);
+
+  useEffect(() => {
+    const trimmed = groupTitle.trim();
+    if (!trimmed) {
+      setTitleStatus('idle');
+      return undefined;
+    }
+
+    setTitleStatus('checking');
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await httpClient.post('/api/chats/check-title', { title: trimmed });
+        setTitleStatus(data.isAvailable ? 'available' : 'taken');
+      } catch (error) {
+        console.error(error);
+        setTitleStatus('idle');
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [groupTitle]);
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -67,9 +98,28 @@ const GroupDirectoryModal = ({
                   <input
                     type="text"
                     className="field-input"
+                    style={{
+                      borderColor:
+                        titleStatus === 'taken'
+                          ? '#ef4444'
+                          : titleStatus === 'available'
+                          ? '#22c55e'
+                          : undefined,
+                    }}
                     value={groupTitle}
                     onChange={(e) => onTitleChange(e.target.value)}
                   />
+                  {titleStatus === 'checking' && (
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      Проверка...
+                    </div>
+                  )}
+                  {titleStatus === 'available' && (
+                    <div style={{ color: '#22c55e', fontSize: 12 }}>Название свободно</div>
+                  )}
+                  {titleStatus === 'taken' && (
+                    <div style={{ color: '#ef4444', fontSize: 12 }}>Данная группа уже существует</div>
+                  )}
                 </label>
                 <UserPicker
                   mode="multi"
@@ -84,7 +134,7 @@ const GroupDirectoryModal = ({
                   onClick={() =>
                     onConfirm(`Вы действительно хотите создать группу "${groupTitle}"?`, onCreateGroup)
                   }
-                  disabled={!groupTitle.trim()}
+                  disabled={!groupTitle.trim() || titleStatus !== 'available'}
                 >
                   Создать группу
                 </button>
@@ -94,7 +144,15 @@ const GroupDirectoryModal = ({
                 <p className="muted">
                   Вы можете подать заявку на вступление в рабочие группы вашей клиники.
                 </p>
-                {availableGroups.map((group) => {
+                <input
+                  type="text"
+                  className="field-input"
+                  placeholder="Поиск по группам"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ marginBottom: 12 }}
+                />
+                {filteredGroups.map((group) => {
                   const isPending = group.membershipStatus === 'pending';
                   return (
                     <div key={group.id} className="group-card">
@@ -115,7 +173,7 @@ const GroupDirectoryModal = ({
                     </div>
                   );
                 })}
-                {!availableGroups.length && (
+                {!filteredGroups.length && (
                   <p className="muted">Нет доступных групп для подачи заявки.</p>
                 )}
               </div>

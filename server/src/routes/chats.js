@@ -18,6 +18,14 @@ router.get(
 );
 
 router.post(
+  '/check-title',
+  asyncHandler(async (req, res) => {
+    const isAvailable = await chatService.checkGroupTitleAvailability(req.body.title);
+    res.json({ isAvailable });
+  })
+);
+
+router.post(
   '/',
   asyncHandler(async (req, res) => {
     const { otherUserId } = req.body || {};

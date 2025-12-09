@@ -128,6 +128,11 @@ export const useChatStore = create((set, get) => ({
       const chatState = state.chats.find((c) => c.id === message.chatId);
       const participantIds = (chatState?.participants || []).map((p) => (p.id || p._id || p).toString());
       const currentId = currentUserId?.toString();
+      const myId = (state.socket?.user?.id || currentUserId || '').toString();
+      const isParticipant = participantIds.some((id) => id === myId);
+      if (chatState?.type === 'group' && !isParticipant) {
+        return;
+      }
       const isRemovedFromGroup =
         chatState?.type === 'group' &&
         (chatState.removed ||
