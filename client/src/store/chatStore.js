@@ -174,6 +174,23 @@ export const useChatStore = create((set, get) => ({
       }
     });
 
+    socket.on('chat:removed', ({ chatId }) => {
+      set((state) => {
+        const updatedChats = state.chats.map((c) => {
+          if (c.id === chatId) {
+            const myId = state.socket?.user?.id;
+            const newParticipants = (c.participants || []).filter((p) => {
+              const pId = p.id || p._id || p;
+              return pId?.toString?.() !== myId?.toString();
+            });
+            return { ...c, removed: true, participants: newParticipants };
+          }
+          return c;
+        });
+        return { chats: updatedChats };
+      });
+    });
+
     socket.on('presence:online', ({ userId, dndEnabled, dndUntil }) => {
       get().updateUserPresence(userId, true, dndEnabled, dndUntil);
     });
@@ -366,6 +383,8 @@ export const useChatStore = create((set, get) => ({
     }
     const { message } = await messagesApi.sendMessage({ chatId, text, mentions, attachments });
     get().addMessage(chatId, message);
+    // Update read time immediately so the UI doesn't show "Unread" line above my own message
+    get().setChatLastRead(chatId, message.createdAt);
     get().updateChatLastMessage(chatId, message);
   },
   addMessage(chatId, message) {
