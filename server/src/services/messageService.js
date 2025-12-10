@@ -294,6 +294,23 @@ const getMessagesForChat = async ({ chatId, viewerId }) => {
     throw error;
   }
 
+  if (chat.type === 'direct') {
+    const participantIds = (chat.participants || []).map((id) => id.toString());
+    const otherId = participantIds.find((id) => id !== viewerId.toString());
+
+    const hasBlock = (chat.blocks || []).some(
+      (b) =>
+        (b.by && b.by.toString() === viewerId.toString() && b.target && b.target.toString() === otherId) ||
+        (b.by && b.by.toString() === otherId && b.target && b.target.toString() === viewerId.toString())
+    );
+
+    if (hasBlock) {
+      const error = new Error('Диалог заблокирован');
+      error.status = 403;
+      throw error;
+    }
+  }
+
   // Block removed users from accessing historical messages
   ensureParticipant(chat, viewerId, { allowRemoved: false });
 

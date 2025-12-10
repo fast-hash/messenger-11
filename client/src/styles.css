@@ -353,86 +353,152 @@ button:disabled {
   background: #fff;
 }
 
-/* --- MESSAGE ROWS --- */
+/* --- CORRECT MESSAGE STYLES --- */
+
 .message-row {
   display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
   width: 100%;
   padding: 4px 16px;
-  gap: 10px;
   transition: background-color 0.15s ease;
 }
 
-/* MINE: Avatar on right, Bubble on right */
-.message-row--mine {
-  flex-direction: row-reverse; 
+.message-row:hover {
+  background: rgba(0, 0, 0, 0.02);
 }
 
-/* THEIRS: Avatar on left, Bubble on left */
+/* MINE: Row Reverse (Avatar Right) */
+.message-row--mine {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+/* THEIR: Normal Row */
 .message-row--incoming {
   flex-direction: row;
+  text-align: left;
 }
 
-/* Wrapper for Name + Bubble */
 .message-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-width: 75%;
+  max-width: 70%;
 }
 
-/* CRITICAL: Push my bubbles to the right edge of the content area */
+/* CRITICAL: Push the blue bubble to the right edge */
 .message-row--mine .message-content {
-  align-items: flex-end; 
+  align-items: flex-end;
 }
 
-/* --- BUBBLE STYLES --- */
-.message-text {
-  padding: 10px 14px;
-  border-radius: 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 14px;
-  line-height: 1.5;
-  text-align: left; /* Fixes the "text skew/staircase" issue */
-  border: none !important;
+/* Author Name */
+.message-author {
+  font-size: 12px;
+  color: #4b5563;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  flex-wrap: wrap;
 }
 
-/* Mine: Blue Background, White Text */
-.message-row--mine .message-text {
-  background: #2563eb;
-  color: #ffffff;
-  border-top-right-radius: 2px; /* Small detail for "speech bubble" look */
+.message-author__name {
+  font-weight: 700;
+  color: #0b6efd;
 }
 
-/* Theirs: Gray Background, Black Text */
-.message-row--incoming .message-text {
-  background: #f3f4f6;
-  color: #1f2937;
-  border-top-left-radius: 2px;
-}
-
-/* Hide author name for ME (cleaner look) */
+/* OPTIONAL: Hide my name for cleaner UI */
 .message-row--mine .message-author {
   display: none;
 }
 
-/* Fix link colors */
+/* BUBBLE STYLE */
+.message-text {
+  padding: 10px 12px;
+  border-radius: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 14px;
+  /* CRITICAL: Text inside bubble must be LEFT aligned for readability */
+  text-align: left;
+}
+
+/* Mine: Blue #2563eb, White Text */
+.message-row--mine .message-text {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+}
+
+/* Theirs: Gray #e5e7eb, Dark Text */
+.message-row--incoming .message-text {
+  background: #e5e7eb;
+  color: #111827;
+  border: none;
+}
+
+/* Link fix */
 .message-row--mine .message-text a {
   color: #dbeafe;
   text-decoration: underline;
 }
 
-/* --- RESTORE VK INPUT STYLE --- */
+/* TIME STAMP */
+.message-time {
+  font-size: 12px;
+  color: #6c757d;
+  line-height: 1.2;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+.message-row--mine .message-time {
+  margin-left: 0;
+  margin-right: 8px;
+}
+
+/* --- INPUT BAR (VK STYLE) --- */
 .vk-input {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border-radius: 24px; /* Pill shape */
+  padding: 6px 10px;
+  border-radius: 999px;
   border: 1px solid #d1d5db;
   background: #ffffff;
 }
-/* Ensure inner elements don't break the layout */
+
+.vk-input__attach-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.vk-input__circle-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb;
+  cursor: pointer;
+  padding: 0;
+}
+
+.vk-input__circle-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.vk-input__plus {
+  font-size: 22px;
+  line-height: 1;
+  color: #4b5563;
+}
+
 .vk-input__textarea {
   flex: 1;
   border: none;
@@ -440,7 +506,28 @@ button:disabled {
   resize: none;
   background: transparent;
   font-size: 14px;
-  max-height: 100px;
+  line-height: 1.4;
+}
+
+.vk-input__send-wrapper {
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  border-left: 1px solid #e5e7eb;
+}
+
+.vk-input__send {
+  background: #e5e7eb;
+  color: #9ca3af;
+}
+
+.vk-input__send--active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.vk-input__send--active:hover {
+  background: #1d4ed8;
 }
 
 .chat-input-bar {
