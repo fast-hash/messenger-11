@@ -294,7 +294,7 @@ const getMessagesForChat = async ({ chatId, viewerId }) => {
     throw error;
   }
 
-  ensureParticipant(chat, viewerId, { allowRemoved: false });
+  ensureParticipant(chat, viewerId, { allowRemoved: true });
 
   const viewerObjectId = new mongoose.Types.ObjectId(viewerId);
   const messages = await Message.find({ chat: chatId, deletedFor: { $ne: viewerObjectId } })
