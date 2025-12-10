@@ -353,43 +353,44 @@ button:disabled {
   background: #fff;
 }
 
-/* --- CORRECT MESSAGE STYLES --- */
+/* --- RESTORED "BEAUTIFUL" STYLES --- */
 
+/* 1. Message Rows (No Wrap, Clean Alignment) */
 .message-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 8px;
-  flex-wrap: wrap;
+  align-items: flex-end; /* Align bubbles to bottom next to avatar */
+  gap: 12px;
   width: 100%;
-  padding: 4px 16px;
+  padding: 6px 16px;
   transition: background-color 0.15s ease;
+  /* CRITICAL: Do NOT use flex-wrap, it breaks the layout */
+  flex-wrap: nowrap; 
 }
 
 .message-row:hover {
   background: rgba(0, 0, 0, 0.02);
 }
 
-/* MINE: Row Reverse (Avatar Right) */
+/* Mine: Avatar Right */
 .message-row--mine {
   flex-direction: row-reverse;
-  text-align: right;
 }
 
-/* THEIR: Normal Row */
+/* Theirs: Avatar Left */
 .message-row--incoming {
   flex-direction: row;
-  text-align: left;
 }
 
+/* Content Wrapper */
 .message-content {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-width: 70%;
+  gap: 2px;
+  max-width: 70%; /* Classic cleaner width */
 }
 
-/* CRITICAL: Push the blue bubble to the right edge */
+/* Align my bubbles to the right */
 .message-row--mine .message-content {
   align-items: flex-end;
 }
@@ -397,106 +398,99 @@ button:disabled {
 /* Author Name */
 .message-author {
   font-size: 12px;
-  color: #4b5563;
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-  flex-wrap: wrap;
+  color: #6b7280;
+  margin-bottom: 2px;
+  white-space: nowrap;
 }
 
 .message-author__name {
   font-weight: 700;
-  color: #0b6efd;
+  color: #2563eb;
 }
 
-/* OPTIONAL: Hide my name for cleaner UI */
+/* Hide my name (cleaner) */
 .message-row--mine .message-author {
   display: none;
 }
 
-/* BUBBLE STYLE */
+/* 2. Bubble Styles (Solid Colors, No Borders) */
 .message-text {
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 10px 14px; /* Restored comfortable padding */
+  border-radius: 14px; /* Softer rounded corners */
   white-space: pre-wrap;
   word-break: break-word;
+  line-height: 1.5;
   font-size: 14px;
-  /* CRITICAL: Text inside bubble must be LEFT aligned for readability */
+  border: none !important; /* KILL BORDERS */
+  
+  /* CRITICAL: Text always left-aligned for readability */
   text-align: left;
 }
 
-/* Mine: Blue #2563eb, White Text */
+/* MINE: Deep Blue Background, White Text (The "Good" Style) */
 .message-row--mine .message-text {
   background: #2563eb;
-  color: #fff;
-  border: none;
+  color: #ffffff;
+  border-bottom-right-radius: 4px; /* Speech bubble effect */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-/* Theirs: Gray #e5e7eb, Dark Text */
+/* THEIR: Light Gray, Dark Text */
 .message-row--incoming .message-text {
-  background: #e5e7eb;
-  color: #111827;
-  border: none;
+  background: #f3f4f6;
+  color: #1f2937;
+  border-bottom-left-radius: 4px;
 }
 
-/* Link fix */
+/* Link Colors */
 .message-row--mine .message-text a {
   color: #dbeafe;
   text-decoration: underline;
 }
 
-/* TIME STAMP */
+/* 3. Time Stamp (Clean) */
 .message-time {
-  font-size: 12px;
-  color: #6c757d;
-  line-height: 1.2;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 4px; /* Align with bottom */
   white-space: nowrap;
-  margin-left: 8px;
-}
-.message-row--mine .message-time {
-  margin-left: 0;
-  margin-right: 8px;
+  min-width: 45px;
+  text-align: center;
 }
 
-/* --- INPUT BAR (VK STYLE) --- */
+/* 4. Input Bar (Pill Shape) */
 .vk-input {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
-  border-radius: 999px;
+  padding: 8px 12px;
+  border-radius: 999px; /* Pill shape */
   border: 1px solid #d1d5db;
   background: #ffffff;
 }
 
 .vk-input__attach-wrapper {
-  position: relative;
   display: flex;
   align-items: center;
 }
 
 .vk-input__circle-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e5e7eb;
+  background: #f3f4f6;
+  color: #6b7280;
   cursor: pointer;
   padding: 0;
+  transition: all 0.2s;
 }
 
-.vk-input__circle-btn:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-
-.vk-input__plus {
-  font-size: 22px;
-  line-height: 1;
-  color: #4b5563;
+.vk-input__circle-btn:hover {
+  background: #e5e7eb;
 }
 
 .vk-input__textarea {
@@ -507,6 +501,8 @@ button:disabled {
   background: transparent;
   font-size: 14px;
   line-height: 1.4;
+  padding: 4px 0;
+  max-height: 120px;
 }
 
 .vk-input__send-wrapper {
@@ -516,16 +512,10 @@ button:disabled {
   border-left: 1px solid #e5e7eb;
 }
 
-.vk-input__send {
-  background: #e5e7eb;
-  color: #9ca3af;
-}
-
 .vk-input__send--active {
   background: #2563eb;
   color: #ffffff;
 }
-
 .vk-input__send--active:hover {
   background: #1d4ed8;
 }

@@ -294,6 +294,9 @@ const getMessagesForChat = async ({ chatId, viewerId }) => {
     throw error;
   }
 
+  // Block removed users from accessing historical messages
+  ensureParticipant(chat, viewerId, { allowRemoved: false });
+
   if (chat.type === 'direct') {
     const participantIds = (chat.participants || []).map((id) => id.toString());
     const otherId = participantIds.find((id) => id !== viewerId.toString());
@@ -310,9 +313,6 @@ const getMessagesForChat = async ({ chatId, viewerId }) => {
       throw error;
     }
   }
-
-  // Block removed users from accessing historical messages
-  ensureParticipant(chat, viewerId, { allowRemoved: false });
 
   const viewerObjectId = new mongoose.Types.ObjectId(viewerId);
   const messages = await Message.find({ chat: chatId, deletedFor: { $ne: viewerObjectId } })
