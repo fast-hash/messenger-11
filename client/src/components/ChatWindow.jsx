@@ -194,16 +194,14 @@ const ChatWindow = ({
     if (!safeMessages.length) return;
 
     const threshold = lastReadAt || chat?.lastReadAt;
-    const currentUserIdStr = currentUserId?.toString();
+    const currentUserIdStr = currentUserId ? String(currentUserId) : '';
 
     const separatorMsg = safeMessages.find((message) => {
-      let msgSenderId = '';
-      if (message.senderId) msgSenderId = message.senderId.toString();
-      else if (message.sender) msgSenderId = (message.sender._id || message.sender).toString();
+      const senderIdStr = message.senderId
+        ? String(message.senderId)
+        : (message.sender?._id || message.sender?.id || message.sender || '').toString();
 
-      const myIdStr = currentUserIdStr || '';
-
-      if (msgSenderId && myIdStr && msgSenderId === myIdStr) return false;
+      if (senderIdStr && currentUserIdStr && senderIdStr === currentUserIdStr) return false;
 
       if (!threshold) return true;
       return new Date(message.createdAt) > new Date(threshold);
@@ -886,14 +884,10 @@ const ChatWindow = ({
           const messageId = getMessageId(message);
           const messageIdStr = (messageId?.toString?.() || '').toString();
 
-          const currentUserIdStr = (currentUserId || '').toString();
-
-          let senderIdStr = '';
-          if (message.senderId) {
-            senderIdStr = message.senderId.toString();
-          } else if (message.sender) {
-            senderIdStr = (message.sender._id || message.sender.id || message.sender).toString();
-          }
+          const currentUserIdStr = String(currentUserId);
+          const senderIdStr = message.senderId
+            ? String(message.senderId)
+            : (message.sender?._id || message.sender?.id || message.sender || '').toString();
 
           const isMine = senderIdStr === currentUserIdStr;
 

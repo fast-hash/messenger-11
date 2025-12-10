@@ -189,7 +189,7 @@ const getUserChats = async ({ userId }) => {
 const checkGroupTitleAvailability = async (title) => {
   if (!title || !title.trim()) return false;
 
-  const escaped = title.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = title.trim().replace(/[.*+?^${}()|[\\]\]/g, '\$&');
   const existing = await Chat.findOne({
     type: 'group',
     title: { $regex: new RegExp(`^${escaped}$`, 'i') },
