@@ -353,6 +353,64 @@ button:disabled {
   background: #fff;
 }
 
+.vk-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px; /* This creates the pill shape */
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+}
+
+.vk-input__attach-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.vk-input__circle-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb;
+  cursor: pointer;
+  padding: 0;
+}
+
+.vk-input__circle-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.vk-input__plus {
+  font-size: 22px;
+  line-height: 1;
+  color: #4b5563;
+}
+
+.vk-input__textarea {
+  flex: 1;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Ensure no other styles override these */
+.vk-input__send-wrapper {
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  border-left: 1px solid #e5e7eb;
+}
+
 .chat-input-bar {
   padding: 8px 16px;
   border-top: 1px solid #e5e7eb;
@@ -628,20 +686,16 @@ button:disabled {
   transition: background-color 0.15s ease;
 }
 
-.message-row:hover {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-/* User's message: Reverse row to put avatar/time on right */
+/* MINE: Push to the right, reverse order (content first, then time) */
 .message-row--mine {
   flex-direction: row-reverse;
 }
 
+/* INCOMING: Standard left-to-right */
 .message-row--incoming {
   flex-direction: row;
 }
 
-/* Container for Name + Bubble + Attachments */
 .message-content {
   display: flex;
   flex-direction: column;
@@ -649,9 +703,21 @@ button:disabled {
   max-width: 80%;
 }
 
-/* Align user's content to the right, BUT keep text inside bubbles left-aligned */
+/* Correctly align the bubble wrapper for own messages to the right */
 .message-row--mine .message-content {
-  align-items: flex-end; 
+  align-items: flex-end;
+}
+
+.message-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #000000;
+  text-align: left; /* Keep text readable (left-aligned) inside the bubble */
+}
+
+/* Optional: Color for own text to distinguish */
+.message-row--mine .message-text {
+  color: #000000;
 }
 
 .message-meta-column {
@@ -685,20 +751,9 @@ button:disabled {
   font-size: 12px;
 }
 
-.message-text {
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: #000000; /* Pure Black */
-  text-align: left; /* ALWAYS LEFT, even for own messages */
-}
-
 .message-text--deleted {
   color: #6b7280;
   font-style: italic;
-}
-
-.message-row--mine .message-text {
-  color: #0b6efd; /* Blue text for mine, can be black if preferred */
 }
 
 .message-row--mention .message-content {
