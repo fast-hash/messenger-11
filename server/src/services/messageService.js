@@ -294,6 +294,7 @@ const getMessagesForChat = async ({ chatId, viewerId }) => {
     throw error;
   }
 
+  // Block removed users from accessing historical messages
   ensureParticipant(chat, viewerId, { allowRemoved: false });
 
   const viewerObjectId = new mongoose.Types.ObjectId(viewerId);
