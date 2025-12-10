@@ -1125,11 +1125,11 @@ const ChatWindow = ({
       <div className="chat-input-bar">
         {isRemovedFromGroup ? (
           <div className="chat-input-banner">
-            Вы были удалены из этой группы. Вы видите историю, но не можете писать.
+            Вы были удалены из этой группы. Если вы считаете, что это произошло по ошибке, подайте заявку повторно.
           </div>
         ) : participantMissing ? (
           <div className="chat-input-banner">
-            Вы были удалены из этой группы. Вы видите историю, но не можете писать.
+            Вы были удалены из этой группы. Если вы считаете, что это произошло по ошибке, подайте заявку повторно.
           </div>
         ) : bottomNotice ? (
           <div className="chat-input-banner">{bottomNotice}</div>

@@ -735,7 +735,6 @@ button:disabled {
 
 .message-row--mine {
   flex-direction: row-reverse;
-  text-align: right;
 }
 
 .message-row--incoming {
@@ -751,7 +750,7 @@ button:disabled {
 
 .message-row--mine .message-content {
   align-items: flex-end;
-  text-align: right;
+  text-align: left;
 }
 
 .message-meta-column {
@@ -763,7 +762,7 @@ button:disabled {
 }
 
 .message-row--mine .message-meta-column {
-  align-items: flex-start;
+  align-items: flex-end;
 }
 
 .message-author {
@@ -789,6 +788,7 @@ button:disabled {
   white-space: pre-wrap;
   word-break: break-word;
   color: #000000;
+  text-align: left;
 }
 
 .message-text--deleted {
@@ -797,7 +797,12 @@ button:disabled {
 }
 
 .message-row--mine .message-text {
-  color: #0b6efd;
+  color: #000000;
+  text-align: left;
+}
+
+.message-row--mine .message-author {
+  display: none;
 }
 
 .message-row--mention .message-content {
