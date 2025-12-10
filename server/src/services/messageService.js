@@ -397,7 +397,7 @@ const deleteForMe = async ({ messageId, userId }) => {
     throw error;
   }
 
-  ensureParticipant(chat, userId, { allowRemoved: true });
+  ensureParticipant(chat, userId, { allowRemoved: false });
 
   const alreadyDeleted = (message.deletedFor || []).some(
     (id) => id && id.toString() === userId.toString()
@@ -444,7 +444,7 @@ const deleteForAll = async ({ messageId, userId }) => {
     throw error;
   }
 
-  ensureParticipant(chat, userId, { allowRemoved: true });
+  ensureParticipant(chat, userId, { allowRemoved: false });
 
   if (message.sender.toString() !== userId.toString()) {
     const error = new Error('Удаление для всех доступно только автору сообщения');
