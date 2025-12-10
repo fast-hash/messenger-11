@@ -10,9 +10,9 @@ body,
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: #f5f5f5;
-  color: #000000;
+  color: #1f2937;
 }
 
 a {
@@ -735,6 +735,7 @@ button:disabled {
 
 .message-row--mine {
   flex-direction: row-reverse;
+  text-align: right;
 }
 
 .message-row--incoming {
@@ -748,11 +749,6 @@ button:disabled {
   max-width: 80%;
 }
 
-.message-row--mine .message-content {
-  align-items: flex-end;
-  text-align: left;
-}
-
 .message-meta-column {
   display: flex;
   flex-direction: column;
@@ -762,7 +758,7 @@ button:disabled {
 }
 
 .message-row--mine .message-meta-column {
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .message-author {
@@ -787,8 +783,7 @@ button:disabled {
 .message-text {
   white-space: pre-wrap;
   word-break: break-word;
-  color: #000000;
-  text-align: left;
+  color: #111827;
 }
 
 .message-text--deleted {
@@ -797,12 +792,7 @@ button:disabled {
 }
 
 .message-row--mine .message-text {
-  color: #000000;
-  text-align: left;
-}
-
-.message-row--mine .message-author {
-  display: none;
+  color: #0b6efd;
 }
 
 .message-row--mention .message-content {
