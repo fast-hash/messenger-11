@@ -353,12 +353,13 @@ button:disabled {
   background: #fff;
 }
 
+/* --- RESTORED INPUT BAR --- */
 .vk-input {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  border-radius: 999px; /* This creates the pill shape */
+  border-radius: 999px; /* Pill shape */
   border: 1px solid #d1d5db;
   background: #ffffff;
 }
@@ -403,12 +404,21 @@ button:disabled {
   line-height: 1.4;
 }
 
-/* Ensure no other styles override these */
 .vk-input__send-wrapper {
   display: flex;
   align-items: center;
   padding-left: 8px;
   border-left: 1px solid #e5e7eb;
+}
+
+.vk-input__send {
+  background: #e5e7eb;
+  color: #9ca3af;
+}
+
+.vk-input__send--active {
+  background: #2563eb;
+  color: #ffffff;
 }
 
 .chat-input-bar {
@@ -675,94 +685,76 @@ button:disabled {
 }
 
 /* Сообщения в стиле ленты (Unified Feed) */
+/* --- RESTORED MESSAGE STYLES --- */
+
 .message-row {
   display: flex;
-  flex-direction: row; /* Always row, never reverse */
-  justify-content: flex-start; /* Always start from left */
-  align-items: flex-start;
-  gap: 12px; /* Space between avatar and content */
   width: 100%;
-  padding: 6px 16px;
+  padding: 4px 16px;
+  gap: 8px;
   transition: background-color 0.15s ease;
 }
 
-.message-row:hover {
-  background: rgba(0, 0, 0, 0.02);
+/* Mine: Right side, Row Reverse to put avatar on right */
+.message-row--mine {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
 }
 
-/* Identical layout for mine and incoming */
-.message-row--mine,
+/* Theirs: Left side */
 .message-row--incoming {
   flex-direction: row;
-  text-align: left;
+  justify-content: flex-start;
 }
 
 .message-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-width: 80%;
-  align-items: flex-start; /* Always align content to left */
+  max-width: 70%; /* Restored width limit from old version */
 }
 
-/* Container for Name and Time */
-.message-header-row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+/* Align my bubbles to the right */
+.message-row--mine .message-content {
+  align-items: flex-end;
 }
 
-.message-author__name {
-  font-weight: 700;
+/* The Bubble itself - Mapped from old .bubble class */
+.message-text {
+  padding: 10px 12px;
+  border-radius: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 14px;
+  text-align: left; /* Fixes the "skewed text" issue */
+}
+
+/* Mine: Blue bg, White text */
+.message-row--mine .message-text {
+  background: #2563eb;
+  color: #fff;
+  border: none; /* Ensure no borders appear */
+}
+
+/* Theirs: Gray bg, Dark text */
+.message-row--incoming .message-text {
+  background: #e5e7eb;
   color: #111827;
-  font-size: 13px;
+  border: none;
+}
+
+/* Metadata (Time) */
+.message-meta-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* Push time to bottom */
+  min-width: 40px;
 }
 
 .message-time {
   font-size: 11px;
   color: #9ca3af;
-}
-
-/* Bubbles logic */
-.message-text {
-  padding: 10px 14px;
-  border-radius: 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.5;
-  font-size: 14px;
-  border: none !important; /* Force remove borders */
-  width: fit-content;
-  max-width: 100%;
-}
-
-/* Styles for MY messages (Blue background) */
-.message-row--mine .message-text {
-  background: #2563eb; /* Original Bright Blue */
-  color: #ffffff; /* White Text */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-/* Styles for THEIR messages (Gray/White background) */
-.message-row--incoming .message-text {
-  background: #f3f4f6; /* Light Gray */
-  color: #1f2937; /* Dark Text */
-}
-
-/* Link colors inside blue bubbles need to be light */
-.message-row--mine .message-text a {
-  color: #dbeafe;
-  text-decoration: underline;
-}
-
-/* Hide author name ONLY for me (optional, keep if user wants cleanliness) */
-.message-row--mine .message-author__name {
-  color: #2563eb; /* Highlight my name in blue instead of hiding */
-}
-
-.message-meta-column {
-  /* Hide the old side-column since time is now in header */
-  display: none;
+  margin-top: 4px;
 }
 
 /* Подбор пользователей и карточки */
