@@ -1,510 +1,1464 @@
-const fs = require('fs');
-const path = require('path');
-const mongoose = require('mongoose');
-const Chat = require('../models/Chat');
-const Message = require('../models/Message');
-const Attachment = require('../models/Attachment');
-const cryptoService = require('./crypto/cryptoService');
-const auditService = require('./auditService');
-const { uploadsRoot } = require('./attachmentService');
+* {
+  box-sizing: border-box;
+}
 
-const ensureParticipant = (chatDoc, userId, { allowRemoved = false } = {}) => {
-  const participantIds = (chatDoc.participants || []).map((id) => id.toString());
-  const removedIds = [
-    ...(chatDoc.removedFor || []).map((id) => id.toString()),
-    ...(chatDoc.removedParticipants || []).map((id) => id.toString()),
-  ];
-  const idStr = userId.toString();
+html,
+body,
+#root {
+  height: 100%;
+}
 
-  if (participantIds.includes(idStr)) {
-    return;
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f5f5f5;
+  color: #1f2937;
+}
+
+a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  height: 100%;
+}
+
+.app-header {
+  background: #1f3b73;
+  color: #fff;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-sidebar {
+  width: 300px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  min-height: 0;
+}
+
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-footer {
+  padding: 10px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.app-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.app-subtitle {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-name {
+  font-weight: 600;
+}
+
+.user-meta {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.sidebar__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sidebar-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.sidebar-actions__btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  background: #2563eb;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.sidebar-actions__btn:hover {
+  background: #1d4ed8;
+}
+
+.sidebar-actions__btn:active {
+  transform: translateY(1px);
+}
+
+.chat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chat-list__item {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  color: inherit;
+}
+
+.chat-list__item--active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.chat-list__avatar .status {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status--online {
+  background: #22c55e;
+}
+
+.status--dnd {
+  background: #ef4444;
+}
+
+.status--offline {
+  background: #9ca3af;
+}
+
+.chat-list__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-list__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chat-list__title {
+  font-weight: 600;
+}
+
+.chat-list__meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.chat-list__time {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.chat-list__time-block {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-list__badge {
+  background: #ef4444;
+  color: #fff;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.chat-list__last {
+  font-size: 13px;
+  color: #4b5563;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted-flag {
+  color: #a0a0a0;
+  font-size: 12px;
+}
+
+.chat-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 8px;
+  min-height: 0;
+}
+
+.chat-window__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.chat-window__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.chat-window__settings {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f7f9fc;
+  border-radius: 8px;
+  border: 1px solid #e4e9f2;
+}
+
+.chat-window__title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.chat-window__meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.chat-window__messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bubble {
+  max-width: 70%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bubble--mine {
+  align-self: flex-end;
+  background: #2563eb;
+  color: #fff;
+}
+
+.bubble--their {
+  align-self: flex-start;
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.bubble__text {
+  word-break: break-word;
+}
+
+.bubble__meta {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.typing-hint {
+  font-size: 13px;
+  color: #2563eb;
+  padding: 4px 0;
+}
+
+.message-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.chat-input-bar {
+  padding: 8px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.chat-input-banner {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #e5f0ff;
+  color: #1d4ed8;
+  font-size: 13px;
+  text-align: center;
+}
+
+.chat-input-banner--warning {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecdd3;
+}
+
+.chat-input-actions {
+  padding: 8px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.message-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.primary-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+}
+
+.primary-btn:hover {
+  background: #1d4ed8;
+}
+
+.vk-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+}
+
+.vk-input__attach-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.vk-input__circle-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb;
+  cursor: pointer;
+  padding: 0;
+}
+
+.vk-input__circle-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.vk-input__plus {
+  font-size: 22px;
+  line-height: 1;
+  color: #4b5563;
+}
+
+.vk-input__textarea {
+  flex: 1;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.vk-input__attach-hint {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #333333;
+  z-index: 10;
+  max-width: 260px;
+}
+
+.vk-input__attach-hint-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.vk-input__attach-hint-text {
+  opacity: 0.8;
+}
+
+.vk-input__send-wrapper {
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  border-left: 1px solid #e5e7eb;
+}
+
+.vk-input__send {
+  background: #e5e7eb;
+  color: #9ca3af;
+}
+
+.vk-input__send-icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.vk-input__send--active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.vk-input__send--active:hover {
+  background: #1d4ed8;
+}
+
+.secondary-btn {
+  background: #e5e7eb;
+  color: #111827;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  width: 36px;
+  min-width: 36px;
+}
+
+.icon-btn--circle {
+  border-radius: 999px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.icon-btn--circle:hover {
+  background: #e5e7eb;
+}
+
+.auth-layout {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  padding: 24px;
+}
+
+.auth-panel {
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  width: 420px;
+  max-width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.auth-subtitle {
+  color: #6b7280;
+  margin-top: -6px;
+  margin-bottom: 12px;
+}
+
+.auth-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.field input,
+.field select,
+.field-input {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.form-error {
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.form-success {
+  color: #16a34a;
+  font-size: 14px;
+}
+
+.auth-switch {
+  margin-top: 10px;
+  color: #4b5563;
+}
+
+.muted {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.empty-state {
+  color: #6b7280;
+  padding: 24px;
+}
+
+.centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal {
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  width: 520px;
+  max-width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 80vh;
+}
+
+.modal.large {
+  max-width: 960px;
+  width: 90vw;
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal__header--with-back {
+  gap: 8px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notice-banner {
+  background: #ecfeff;
+  border: 1px solid #bae6fd;
+  color: #0ea5e9;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin: 0 0 8px;
+}
+
+.choice-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-list__item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.search-list__name {
+  font-weight: 600;
+}
+
+.search-list__meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+@media (max-width: 900px) {
+  .app-body {
+    flex-direction: column;
   }
 
-  if (allowRemoved && removedIds.includes(idStr)) {
-    return;
+  .app-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
   }
 
-  const error = new Error('Not authorized for this chat');
-  error.status = 403;
-  throw error;
-};
-
-const unlinkAttachments = async (attachmentIds) => {
-  if (!attachmentIds || attachmentIds.length === 0) return;
-
-  const ids = attachmentIds.map((att) => (att?._id ? att._id : att));
-  const docs = await Attachment.find({ _id: { $in: ids } });
-
-  for (const doc of docs) {
-    if (!doc.storageKey) continue;
-    const fullPath = path.join(uploadsRoot, doc.storageKey);
-    fs.unlink(fullPath, (err) => {
-      if (err && err.code !== 'ENOENT') {
-        console.error('File delete error:', err);
-      }
-    });
-  }
-};
-
-const toMessageDto = (messageDoc, text) => {
-  const sender = messageDoc.sender || {};
-  const senderDto = sender._id
-    ? {
-        id: sender._id.toString(),
-        displayName: sender.displayName,
-        username: sender.username,
-        role: sender.role,
-        department: sender.department,
-        email: sender.email,
-      }
-    : { id: sender.toString() };
-
-  const deletedById = messageDoc.deletedBy ? messageDoc.deletedBy.toString() : null;
-  const attachmentsList = Array.isArray(messageDoc.attachments) ? messageDoc.attachments : [];
-  const attachmentsDto = messageDoc.deletedForAll
-    ? []
-    : attachmentsList.map((attachment) => ({
-        id: attachment._id ? attachment._id.toString() : attachment.toString(),
-        originalName: attachment.originalName,
-        mimeType: attachment.mimeType,
-        size: attachment.size,
-        status: attachment.status,
-      }));
-
-  return {
-    id: messageDoc._id.toString(),
-    chatId: messageDoc.chat.toString(),
-    senderId: senderDto.id,
-    sender: senderDto,
-    text: messageDoc.deletedForAll ? null : text,
-    reactions: (messageDoc.reactions || []).map((reaction) => ({
-      emoji: reaction.emoji,
-      userId: reaction.userId ? reaction.userId.toString() : null,
-    })),
-    createdAt: messageDoc.createdAt ? messageDoc.createdAt.toISOString() : new Date().toISOString(),
-    createdAtMs: messageDoc.createdAt ? messageDoc.createdAt.getTime() : Date.now(),
-    mentions: (messageDoc.mentions || []).map((id) => id.toString()),
-    deletedForAll: !!messageDoc.deletedForAll,
-    deletedAt: messageDoc.deletedAt,
-    deletedBy: deletedById,
-    attachments: attachmentsDto,
-  };
-};
-
-const sendMessage = async ({ chatId, senderId, senderRole, text, mentions = [], attachments = [] }) => {
-  const hasText = typeof text === 'string' && text.trim().length > 0;
-  const attachmentIds = Array.isArray(attachments)
-    ? attachments.filter((id) => id && mongoose.Types.ObjectId.isValid(id)).map((id) => id.toString())
-    : [];
-  const uniqueAttachmentIds = [...new Set(attachmentIds)];
-
-  if (!chatId || !senderId || (!hasText && uniqueAttachmentIds.length === 0)) {
-    const error = new Error('chatId, senderId, and content are required');
-    error.status = 400;
-    throw error;
+  .chat-window {
+    padding: 12px;
   }
 
-  const trimmed = hasText ? text.trim() : '';
-
-  const chat = await Chat.findById(chatId);
-  if (!chat) {
-    const error = new Error('Chat not found');
-    error.status = 404;
-    throw error;
+  .message-form {
+    padding: 10px;
   }
+}
 
-  if (chat.type === 'group') {
-    const isParticipant = (chat.participants || []).some((id) => id.toString() === senderId.toString());
-    if (!isParticipant) {
-      const error = new Error('Вы больше не являетесь участником группы');
-      error.status = 403;
-      throw error;
-    }
+/* Сообщения в стиле ленты */
+.message-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 4px 16px;
+  transition: background-color 0.15s ease;
+}
+
+.message-row:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.message-row--mine {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.message-row--incoming {
+  flex-direction: row;
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 80%;
+}
+
+.message-meta-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 90px;
+}
+
+.message-row--mine .message-meta-column {
+  align-items: flex-start;
+}
+
+.message-author {
+  font-size: 12px;
+  color: #4b5563;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.message-author__name {
+  font-weight: 700;
+  color: #0b6efd;
+}
+
+.message-author__meta {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.message-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #111827;
+}
+
+.message-text--deleted {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.message-row--mine .message-text {
+  color: #0b6efd;
+}
+
+.message-row--mention .message-content {
+  border-left: 3px solid #f59e0b;
+  padding-left: 10px;
+}
+
+.mention-badge {
+  background: #f59e0b;
+  color: #fff;
+  border-radius: 8px;
+  padding: 2px 6px;
+  font-size: 11px;
+  margin-left: 8px;
+}
+
+.message-time {
+  font-size: 12px;
+  color: #6c757d;
+  line-height: 1.2;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.message-row--mine .message-time {
+  margin-left: 0;
+  margin-right: 8px;
+}
+
+.unread-separator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.unread-separator::before,
+.unread-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+/* Подбор пользователей и карточки */
+.user-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.user-picker__list {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-card {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+}
+
+.user-card--selected {
+  border-color: #2563eb;
+  background: #eef2ff;
+}
+
+.user-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-card__title {
+  font-weight: 600;
+}
+
+.user-card__meta {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.user-card__checkbox {
+  margin-top: 6px;
+}
+
+/* Модальные окна и прокрутки */
+.modal-body-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-height: 70vh;
+}
+
+.group-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.group-list.single-column {
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+.group-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.group-manage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.group-manage-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group-manage-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group-card__title {
+  font-weight: 700;
+}
+
+.group-card__meta {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+@media (max-width: 1024px) {
+  .group-manage-grid {
+    grid-template-columns: 1fr;
   }
+}
 
-  if (chat.type === 'direct') {
-    const participantIds = (chat.participants || []).map((id) => id.toString());
-    const otherId = participantIds.find((id) => id !== senderId.toString());
-    const hasBlock = (chat.blocks || []).some(
-      (b) =>
-        (b.by && b.by.toString() === senderId.toString() && b.target && b.target.toString() === otherId) ||
-        (b.by && b.by.toString() === otherId && b.target && b.target.toString() === senderId.toString())
-    );
+.user-list-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+}
 
-    if (hasBlock) {
-      const error = new Error('Диалог заблокирован');
-      error.status = 403;
-      throw error;
-    }
-  }
+.group-list-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+}
 
-  ensureParticipant(chat, senderId);
+.list-scroll {
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-  if (chat.rateLimitPerMinute) {
-    const windowMs = 60 * 1000;
-    const since = new Date(Date.now() - windowMs);
-    const recentMessages = await Message.find({
-      chat: chatId,
-      sender: senderId,
-      createdAt: { $gt: since },
-    })
-      .sort({ createdAt: 1 })
-      .limit(chat.rateLimitPerMinute);
+.participant-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
 
-    if (recentMessages.length >= chat.rateLimitPerMinute) {
-      const retryAt = new Date(recentMessages[0].createdAt.getTime() + windowMs);
-      const error = new Error('Превышен лимит отправки');
-      error.status = 429;
-      error.code = 'RATE_LIMITED';
-      error.retryAt = retryAt;
-      error.retryAfterMs = Math.max(retryAt.getTime() - Date.now(), 0);
-      error.limit = chat.rateLimitPerMinute;
-      throw error;
-    }
-  }
+.participant-name {
+  font-weight: 600;
+}
 
-  const isChatAdmin =
-    (chat.admins || []).some((id) => id.toString() === senderId.toString()) ||
-    (chat.createdBy && chat.createdBy.toString() === senderId.toString());
-  const isGlobalAdmin = senderRole === 'admin';
+.participant-meta {
+  font-size: 13px;
+  color: #4b5563;
+}
 
-  if (chat.rateLimitPerMinute && !isChatAdmin && !isGlobalAdmin) {
-    const windowMs = 60 * 1000;
-    const since = new Date(Date.now() - windowMs);
-    const recentMessages = await Message.find({
-      chat: chatId,
-      sender: senderId,
-      createdAt: { $gt: since },
-    })
-      .sort({ createdAt: 1 })
-      .limit(chat.rateLimitPerMinute);
+.chat-window__pins {
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
 
-    if (recentMessages.length >= chat.rateLimitPerMinute) {
-      const retryAt = new Date(recentMessages[0].createdAt.getTime() + windowMs);
-      const error = new Error('Превышен лимит отправки');
-      error.status = 429;
-      error.code = 'RATE_LIMITED';
-      error.retryAt = retryAt;
-      error.retryAfterMs = Math.max(retryAt.getTime() - Date.now(), 0);
-      error.limit = chat.rateLimitPerMinute;
-      throw error;
-    }
-  }
+.chat-window__pins-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
 
-  const now = new Date();
-  if (chat.muteUntil && new Date(chat.muteUntil).getTime() > now.getTime() && !isChatAdmin && !isGlobalAdmin) {
-    const error = new Error(`Чат на паузе до ${new Date(chat.muteUntil).toISOString()}`);
-    error.status = 403;
-    throw error;
-  }
+.chat-window__pins-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-  const uniqueMentions = Array.from(
-    new Set(
-      (Array.isArray(mentions) ? mentions : [])
-        .filter((id) => id && mongoose.Types.ObjectId.isValid(id))
-        .map((id) => id.toString())
-    )
-  );
+.chat-window__moderation {
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
 
-  const participantIds = (chat.participants || []).map((id) => id.toString());
-  const filteredMentions = uniqueMentions.filter((id) => participantIds.includes(id));
+.chat-window__moderation-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
 
-  const { ciphertext, plaintext, encryption } = await cryptoService.encrypt(trimmed, {
-    chatId,
-    senderId,
-  });
+.chat-window__moderation-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
 
-  if (uniqueAttachmentIds.length) {
-    const docs = await Attachment.find({ _id: { $in: uniqueAttachmentIds } });
-    const invalid = docs.filter(
-      (doc) =>
-        doc.chatId.toString() !== chatId.toString() ||
-        doc.uploaderId.toString() !== senderId.toString() ||
-        doc.status !== 'uploaded'
-    );
+.audit-log {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+  max-height: 220px;
+  overflow-y: auto;
+  width: 100%;
+}
 
-    if (invalid.length || docs.length !== uniqueAttachmentIds.length) {
-      const error = new Error('Некоторые вложения недоступны для отправки');
-      error.status = 400;
-      throw error;
-    }
-  }
+.audit-log__item {
+  padding: 6px 4px;
+  border-bottom: 1px dashed #e5e7eb;
+}
 
-  const message = await Message.create({
-    chat: chatId,
-    sender: senderId,
-    plaintext,
-    ciphertext,
-    encryption,
-    mentions: filteredMentions,
-    attachments: uniqueAttachmentIds,
-  });
+.audit-log__item:last-child {
+  border-bottom: none;
+}
 
-  await message.populate('sender');
+.audit-log__message {
+  font-size: 14px;
+  color: #111827;
+}
 
-  const lastMessageText = trimmed || (uniqueAttachmentIds.length ? 'Вложение' : '');
+.audit-log__meta {
+  font-size: 12px;
+  color: #6b7280;
+}
 
-  await Chat.findByIdAndUpdate(chatId, {
-    lastMessage: {
-      text: lastMessageText,
-      sender: senderId,
-      createdAt: message.createdAt,
-    },
-    updatedAt: message.createdAt,
-  });
+.message-actions {
+  margin-top: 4px;
+}
 
-  const matchResult = await Chat.updateOne(
-    { _id: chatId, 'readState.user': senderId },
-    { $set: { 'readState.$.lastReadAt': message.createdAt } }
-  );
-  const matched =
-    matchResult.matchedCount ?? matchResult.nModified ?? matchResult.modifiedCount ?? 0;
+.message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
 
-  if (!matched) {
-    await Chat.updateOne(
-      { _id: chatId },
-      { $push: { readState: { user: senderId, lastReadAt: message.createdAt } } }
-    );
-  }
+.attachment-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  padding: 6px;
+  max-width: 220px;
+}
 
-  if (uniqueAttachmentIds.length) {
-    await Attachment.updateMany(
-      { _id: { $in: uniqueAttachmentIds } },
-      { $set: { status: 'linked', messageId: message._id, expiresAt: null } }
-    );
-  }
+.attachment-card--document {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+}
 
-  const populatedMessage = await Message.findById(message._id).populate('sender').populate('attachments');
-  const safeText = await cryptoService.decrypt(populatedMessage, { viewerId: senderId });
+.attachment-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #eef2ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 22px;
+}
 
-  return toMessageDto(populatedMessage, safeText);
-};
+.attachment-card__image {
+  max-width: 100%;
+  max-height: 180px;
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+}
 
-const getMessagesForChat = async ({ chatId, viewerId }) => {
-  if (!chatId || !viewerId) {
-    const error = new Error('chatId and viewerId are required');
-    error.status = 400;
-    throw error;
-  }
+.attachment-card__body {
+  flex: 1;
+  min-width: 0;
+}
 
-  const chat = await Chat.findById(chatId);
-  if (!chat) {
-    const error = new Error('Chat not found');
-    error.status = 404;
-    throw error;
-  }
+.attachment-card__file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 
-  // Block removed users from accessing historical messages
-  ensureParticipant(chat, viewerId, { allowRemoved: false });
+.attachment-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
-  if (chat.type === 'direct') {
-    const participantIds = (chat.participants || []).map((id) => id.toString());
-    const otherId = participantIds.find((id) => id !== viewerId.toString());
+.attachment-card__name {
+  font-weight: 600;
+  font-size: 14px;
+}
 
-    const hasBlock = (chat.blocks || []).some(
-      (b) =>
-        (b.by && b.by.toString() === viewerId.toString() && b.target && b.target.toString() === otherId) ||
-        (b.by && b.by.toString() === otherId && b.target && b.target.toString() === viewerId.toString())
-    );
+.attachment-card__size {
+  font-size: 12px;
+  color: #6b7280;
+}
 
-    if (hasBlock) {
-      const error = new Error('Диалог заблокирован');
-      error.status = 403;
-      throw error;
-    }
-  }
+.attachments-queue {
+  padding: 8px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-  const viewerObjectId = new mongoose.Types.ObjectId(viewerId);
-  const messages = await Message.find({ chat: chatId, deletedFor: { $ne: viewerObjectId } })
-    .sort({ createdAt: 1 })
-    .populate('sender')
-    .populate('attachments');
+.chat-upload__status {
+  display: block;
+  margin: 6px 0;
+  font-size: 12px;
+  color: #6b7280;
+}
 
-  const results = [];
-  for (const message of messages) {
-    // eslint-disable-next-line no-await-in-loop
-    if (message.deletedForAll) {
-      results.push(toMessageDto(message, null));
-      continue;
-    }
+.attachments-queue__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 
-    const safeText = await cryptoService.decrypt(message, { viewerId });
-    results.push(toMessageDto(message, safeText));
-  }
+.attachments-queue__name {
+  font-weight: 600;
+}
 
-  const readState = (chat.readState || []).find(
-    (entry) => entry.user && entry.user.toString() === viewerId.toString()
-  );
+.attachments-queue__size {
+  font-size: 12px;
+}
 
-  return { messages: results, lastReadAt: readState ? readState.lastReadAt : null };
-};
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #2563eb;
+  cursor: pointer;
+}
 
-const toggleReaction = async ({ messageId, userId, emoji }) => {
-  if (!messageId || !userId || !emoji) {
-    const error = new Error('messageId, userId and emoji are required');
-    error.status = 400;
-    throw error;
-  }
+.link-btn:hover {
+  text-decoration: underline;
+}
 
-  const message = await Message.findById(messageId);
-  if (!message) {
-    const error = new Error('Message not found');
-    error.status = 404;
-    throw error;
-  }
+.message-reactions {
+  margin-top: 8px;
+}
 
-  const chat = await Chat.findById(message.chat);
-  if (!chat) {
-    const error = new Error('Chat not found');
-    error.status = 404;
-    throw error;
-  }
+.message-reactions__selected {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
 
-  ensureParticipant(chat, userId);
+.reaction-badge {
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+}
 
-  const trimmedEmoji = emoji.trim();
-  if (!trimmedEmoji) {
-    const error = new Error('Emoji is required');
-    error.status = 400;
-    throw error;
-  }
+.reaction-badge--mine {
+  border-color: #2563eb;
+  background: #dbeafe;
+}
 
-  const existingIndex = (message.reactions || []).findIndex(
-    (reaction) => reaction.userId.toString() === userId.toString()
-  );
+.message-reactions__picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 
-  if (existingIndex >= 0) {
-    const existing = message.reactions[existingIndex];
-    if (existing.emoji === trimmedEmoji) {
-      message.reactions.splice(existingIndex, 1);
-    } else {
-      message.reactions.splice(existingIndex, 1, { emoji: trimmedEmoji, userId });
-    }
-  } else {
-    message.reactions.push({ emoji: trimmedEmoji, userId });
-  }
+.reaction-picker__btn {
+  border: 1px dashed #e5e7eb;
+  background: #fff;
+  padding: 4px 6px;
+  border-radius: 10px;
+  cursor: pointer;
+}
 
-  await message.save();
-  const reactions = (message.reactions || []).map((reaction) => ({
-    emoji: reaction.emoji,
-    userId: reaction.userId ? reaction.userId.toString() : null,
-  }));
+.message-actions--compact {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  align-items: center;
+}
 
-  return { chatId: chat._id.toString(), messageId: message._id.toString(), reactions };
-};
+.message-actions__menu {
+  position: relative;
+}
 
-const deleteForMe = async ({ messageId, userId }) => {
-  if (!messageId || !userId) {
-    const error = new Error('messageId and userId are required');
-    error.status = 400;
-    throw error;
-  }
+.message-popover,
+.message-reactions__menu-list {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  padding: 8px;
+  min-width: 170px;
+  z-index: 4;
+}
 
-  const message = await Message.findById(messageId);
-  if (!message) {
-    const error = new Error('Message not found');
-    error.status = 404;
-    throw error;
-  }
+.message-popover {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-  const chat = await Chat.findById(message.chat);
-  if (!chat) {
-    const error = new Error('Chat not found');
-    error.status = 404;
-    throw error;
-  }
+.message-popover .link-btn {
+  width: 100%;
+  text-align: left;
+  padding: 6px 4px;
+  border-radius: 6px;
+}
 
-  ensureParticipant(chat, userId, { allowRemoved: false });
+.message-popover .link-btn:hover {
+  background: #f3f4f6;
+  text-decoration: none;
+}
 
-  const alreadyDeleted = (message.deletedFor || []).some(
-    (id) => id && id.toString() === userId.toString()
-  );
+.message-reactions__menu-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 160px;
+}
 
-  if (!alreadyDeleted) {
-    message.deletedFor.push(userId);
-  }
+.chat-window__search {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+}
 
-  if (message.attachments && message.attachments.length > 0) {
-    const participantIds = (chat.participants || []).map((id) => id.toString());
-    const deletedIds = (message.deletedFor || []).map((id) => id && id.toString());
-    const allDeleted = participantIds.every((id) => deletedIds.includes(id));
+.chat-window__search input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
 
-    if (allDeleted) {
-      await unlinkAttachments(message.attachments);
-      message.attachments = [];
-    }
-  }
+.chat-window__mentions {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
 
-  await message.save();
+.chat-window__mentions-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
 
-  return { ok: true };
-};
+.chat-window__mentions-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
 
-const deleteForAll = async ({ messageId, userId }) => {
-  if (!messageId || !userId) {
-    const error = new Error('messageId and userId are required');
-    error.status = 400;
-    throw error;
-  }
+.chat-window__action-popover {
+  position: relative;
+}
 
-  const message = await Message.findById(messageId);
-  if (!message) {
-    const error = new Error('Message not found');
-    error.status = 404;
-    throw error;
-  }
+.chat-window__popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 10px;
+  z-index: 5;
+  min-width: 220px;
+}
 
-  const chat = await Chat.findById(message.chat);
-  if (!chat) {
-    const error = new Error('Chat not found');
-    error.status = 404;
-    throw error;
-  }
+.chat-window__popover--mentions {
+  min-width: 220px;
+  max-width: 280px;
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
-  ensureParticipant(chat, userId, { allowRemoved: false });
+.chat-window__mentions select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  width: 100%;
+}
 
-  if (message.sender.toString() !== userId.toString()) {
-    const error = new Error('Удаление для всех доступно только автору сообщения');
-    error.status = 403;
-    throw error;
-  }
+.mention-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 
-  const tenMinutes = 10 * 60 * 1000;
-  if (Date.now() - new Date(message.createdAt).getTime() > tenMinutes) {
-    const error = new Error('Окно удаления истекло (10 минут)');
-    error.status = 409;
-    throw error;
-  }
+.mention-chip {
+  background: #e5f0ff;
+  color: #0b6efd;
+  border-radius: 12px;
+  padding: 4px 8px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 
-  await unlinkAttachments(message.attachments);
-  message.attachments = [];
-  message.deletedForAll = true;
-  message.deletedAt = new Date();
-  message.deletedBy = userId;
-  await message.save();
+.mention-chip__remove {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #0b6efd;
+  font-size: 12px;
+  line-height: 1;
+}
 
-  if (chat.type === 'group') {
-    await auditService.logEvent({
-      chatId: message.chat,
-      actorId: userId,
-      type: 'MESSAGE_DELETED_FOR_ALL',
-      meta: { messageId: message._id.toString() },
-    });
-  }
+.call-banner {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  background: #f5f7fb;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+  z-index: 2000;
+  min-width: 260px;
+}
 
-  return {
-    messageId: message._id.toString(),
-    chatId: message.chat.toString(),
-    deletedForAll: true,
-    deletedAt: message.deletedAt,
-    deletedBy: userId.toString(),
-  };
-};
+.call-banner__title {
+  font-weight: 700;
+  color: #111827;
+}
 
-module.exports = {
-  sendMessage,
-  getMessagesForChat,
-  toggleReaction,
-  deleteForMe,
-  deleteForAll,
-};
+.call-banner__subtitle {
+  color: #374151;
+  font-size: 14px;
+}
+
+.call-banner__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.call-window {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, #0b6efd 0%, #0a58ca 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px 24px 48px;
+  z-index: 2500;
+}
+
+.call-window__header {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.call-window__body {
+  text-align: center;
+  margin-top: 48px;
+}
+
+.call-window__title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.call-window__peer {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.call-window__status {
+  margin-top: 8px;
+  opacity: 0.9;
+}
+
+.call-window__controls {
+  display: flex;
+  gap: 12px;
+}
+
+.call-toast {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: #111827;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2600;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+}
