@@ -118,6 +118,5 @@ chatSchema.index(
     partialFilterExpression: { type: 'direct', participantsKey: { $exists: true } },
   }
 );
-chatSchema.index({ type: 1 });
 
 module.exports = mongoose.model('Chat', chatSchema);

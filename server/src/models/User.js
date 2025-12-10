@@ -76,9 +76,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ username: 1 }, { unique: true });
-
 userSchema.set('toJSON', {
   transform: (_, ret) => {
     ret.id = ret._id.toString();

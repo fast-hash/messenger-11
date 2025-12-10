@@ -49,9 +49,6 @@ const registrationRequestSchema = new mongoose.Schema(
   }
 );
 
-registrationRequestSchema.index({ email: 1 }, { unique: true });
-registrationRequestSchema.index({ username: 1 }, { unique: true });
-
 registrationRequestSchema.set('toJSON', {
   transform: (_, ret) => {
     ret.id = ret._id.toString();
