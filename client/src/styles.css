@@ -734,8 +734,8 @@ button:disabled {
 }
 
 .message-row--mine {
-  flex-direction: row-reverse;
-  text-align: right;
+  flex-direction: row;
+  text-align: left;
 }
 
 .message-row--incoming {
@@ -758,7 +758,7 @@ button:disabled {
 }
 
 .message-row--mine .message-meta-column {
-  align-items: flex-start;
+  align-items: flex-end;
 }
 
 .message-author {
@@ -792,7 +792,7 @@ button:disabled {
 }
 
 .message-row--mine .message-text {
-  color: #0b6efd;
+  color: #111827;
 }
 
 .message-row--mention .message-content {
@@ -818,8 +818,8 @@ button:disabled {
 }
 
 .message-row--mine .message-time {
-  margin-left: 0;
-  margin-right: 8px;
+  margin-left: 8px;
+  margin-right: 0;
 }
 
 .unread-separator {
