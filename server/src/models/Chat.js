@@ -6,7 +6,6 @@ const chatSchema = new mongoose.Schema(
       type: String,
       enum: ['direct', 'group'],
       default: 'direct',
-      index: true,
     },
     title: {
       type: String,

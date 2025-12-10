@@ -632,20 +632,26 @@ button:disabled {
   background: rgba(0, 0, 0, 0.02);
 }
 
+/* User's message: Reverse row to put avatar/time on right */
 .message-row--mine {
   flex-direction: row-reverse;
-  text-align: right;
 }
 
 .message-row--incoming {
   flex-direction: row;
 }
 
+/* Container for Name + Bubble + Attachments */
 .message-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
   max-width: 80%;
+}
+
+/* Align user's content to the right, BUT keep text inside bubbles left-aligned */
+.message-row--mine .message-content {
+  align-items: flex-end; 
 }
 
 .message-meta-column {
@@ -682,7 +688,8 @@ button:disabled {
 .message-text {
   white-space: pre-wrap;
   word-break: break-word;
-  color: #000000;
+  color: #000000; /* Pure Black */
+  text-align: left; /* ALWAYS LEFT, even for own messages */
 }
 
 .message-text--deleted {
@@ -691,7 +698,7 @@ button:disabled {
 }
 
 .message-row--mine .message-text {
-  color: #0b6efd;
+  color: #0b6efd; /* Blue text for mine, can be black if preferred */
 }
 
 .message-row--mention .message-content {
