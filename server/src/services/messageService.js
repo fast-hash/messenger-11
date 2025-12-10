@@ -74,7 +74,7 @@ const toMessageDto = (messageDoc, text) => {
   return {
     id: messageDoc._id.toString(),
     chatId: messageDoc.chat.toString(),
-    senderId: messageDoc.sender.toString(),
+    senderId: senderDto.id,
     sender: senderDto,
     text: messageDoc.deletedForAll ? null : text,
     reactions: (messageDoc.reactions || []).map((reaction) => ({
@@ -294,7 +294,7 @@ const getMessagesForChat = async ({ chatId, viewerId }) => {
     throw error;
   }
 
-  ensureParticipant(chat, viewerId, { allowRemoved: true });
+  ensureParticipant(chat, viewerId, { allowRemoved: false });
 
   const viewerObjectId = new mongoose.Types.ObjectId(viewerId);
   const messages = await Message.find({ chat: chatId, deletedFor: { $ne: viewerObjectId } })
