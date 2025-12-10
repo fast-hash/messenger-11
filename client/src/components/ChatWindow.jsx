@@ -884,10 +884,10 @@ const ChatWindow = ({
           const messageId = getMessageId(message);
           const messageIdStr = (messageId?.toString?.() || '').toString();
 
-          const senderIdStr = message.senderId
-            ? String(message.senderId)
-            : (message.sender?._id || message.sender?.id || message.sender || '').toString();
-          const currentUserIdStr = String(currentUserId);
+          const senderIdStr = (
+            message.senderId || message.sender?.id || message.sender?._id || message.sender || ''
+          ).toString();
+          const currentUserIdStr = (currentUserId || '').toString();
           const isMine = senderIdStr === currentUserIdStr;
 
           const sender = message.sender || {};
@@ -1123,7 +1123,11 @@ const ChatWindow = ({
       )}
 
       <div className="chat-input-bar">
-        {participantMissing ? (
+        {isRemovedFromGroup ? (
+          <div className="chat-input-banner">
+            Вы были удалены из этой группы. Вы видите историю, но не можете писать.
+          </div>
+        ) : participantMissing ? (
           <div className="chat-input-banner">
             Вы были удалены из этой группы. Вы видите историю, но не можете писать.
           </div>
