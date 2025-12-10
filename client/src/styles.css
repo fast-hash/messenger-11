@@ -725,27 +725,34 @@ button:disabled {
 
 /* Bubbles logic */
 .message-text {
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
   white-space: pre-wrap;
   word-break: break-word;
-  color: #000000;
-  line-height: 1.4;
+  line-height: 1.5;
   font-size: 14px;
+  border: none !important; /* Force remove borders */
+  width: fit-content;
+  max-width: 100%;
 }
 
 /* Styles for MY messages (Blue background) */
 .message-row--mine .message-text {
-  background: #eef2ff; /* Light blue background */
-  color: #1e3a8a; /* Dark blue text */
-  border: 1px solid #dbeafe;
+  background: #2563eb; /* Original Bright Blue */
+  color: #ffffff; /* White Text */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Styles for THEIR messages (Gray/White background) */
 .message-row--incoming .message-text {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  color: #1f2937;
+  background: #f3f4f6; /* Light Gray */
+  color: #1f2937; /* Dark Text */
+}
+
+/* Link colors inside blue bubbles need to be light */
+.message-row--mine .message-text a {
+  color: #dbeafe;
+  text-decoration: underline;
 }
 
 /* Hide author name ONLY for me (optional, keep if user wants cleanliness) */
