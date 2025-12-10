@@ -155,7 +155,6 @@ const ChatsPage = () => {
 
   useEffect(() => {
     if (selectedChatId && !messages[selectedChatId]) {
-      if (isRemovedFromSelectedGroup) return;
       loadMessages(selectedChatId);
     }
   }, [selectedChatId, messages, loadMessages, isRemovedFromSelectedGroup]);

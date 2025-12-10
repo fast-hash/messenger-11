@@ -32,6 +32,8 @@ const ChatList = ({ chats, selectedChatId, onSelect }) => {
               ? 'status status--dnd'
               : 'status status--online'
             : 'status status--offline';
+        const showBadge = chat.unreadCount > 0 && !chat.removed;
+
         return (
           <li key={chat.id}>
             <button
@@ -56,7 +58,7 @@ const ChatList = ({ chats, selectedChatId, onSelect }) => {
                   </div>
                   <div className="chat-list__time-block">
                     <span className="chat-list__time">{lastTime}</span>
-                    {chat.unreadCount > 0 && <span className="chat-list__badge">{chat.unreadCount}</span>}
+                    {showBadge && <span className="chat-list__badge">{chat.unreadCount}</span>}
                   </div>
                 </div>
                 <div className="chat-list__last">

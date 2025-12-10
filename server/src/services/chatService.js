@@ -3,6 +3,7 @@ const Chat = require('../models/Chat');
 const User = require('../models/User');
 const Message = require('../models/Message');
 const auditService = require('./auditService');
+const { getIo } = require('../sockets');
 const { Types } = mongoose;
 
 const toObjectId = (value) => {
@@ -188,7 +189,7 @@ const getUserChats = async ({ userId }) => {
 const checkGroupTitleAvailability = async (title) => {
   if (!title || !title.trim()) return false;
 
-  const escaped = title.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = title.trim().replace(/[.*+?^${}()|[\\]\]/g, '\$&');
   const existing = await Chat.findOne({
     type: 'group',
     title: { $regex: new RegExp(`^${escaped}$`, 'i') },
@@ -428,6 +429,14 @@ const groupRemoveParticipant = async ({ chatId, adminId, userId }) => {
     )
   );
   await chat.save();
+  const io = getIo();
+
+  if (io) {
+    io.to(`user:${participantObjectId.toString()}`).emit('chat:removed', {
+      chatId: chat._id.toString(),
+      reason: 'You have been removed from this group',
+    });
+  }
   await chat.populate([
     { path: 'participants', select: 'username email displayName role department jobTitle' },
     { path: 'admins', select: 'username email displayName role department jobTitle' },
