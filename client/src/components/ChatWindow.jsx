@@ -884,11 +884,10 @@ const ChatWindow = ({
           const messageId = getMessageId(message);
           const messageIdStr = (messageId?.toString?.() || '').toString();
 
-          const currentUserIdStr = String(currentUserId);
           const senderIdStr = message.senderId
             ? String(message.senderId)
             : (message.sender?._id || message.sender?.id || message.sender || '').toString();
-
+          const currentUserIdStr = String(currentUserId);
           const isMine = senderIdStr === currentUserIdStr;
 
           const sender = message.sender || {};
@@ -916,9 +915,8 @@ const ChatWindow = ({
           const attachments = message.attachments || [];
           const isDeletedForAll = !!message.deletedForAll;
 
-          const createdAtMs = new Date(message.createdAt).getTime();
-          const isTimeValid =
-            !Number.isNaN(createdAtMs) && Date.now() - createdAtMs <= 10 * 60 * 1000;
+          const msgTime = new Date(message.createdAt).getTime();
+          const isTimeValid = !Number.isNaN(msgTime) && Date.now() - msgTime < 10 * 60 * 1000;
           const canDeleteForAll = isMine && !isDeletedForAll && isTimeValid;
 
           return (

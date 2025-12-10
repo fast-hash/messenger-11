@@ -72,7 +72,7 @@ const normalizeObjectIds = (list = []) => {
 const cleanJoinRequests = (requests = []) =>
   requests.filter((req) => req && req.user && mongoose.isValidObjectId(req.user));
 
-const toChatDto = (chatDoc, currentUserId) => {
+const toChatDto = (chatDoc, currentUserId, extra = {}) => {
   const participantIds = (chatDoc.participants || []).map((p) =>
     p._id ? p._id.toString() : p.toString()
   );
@@ -89,7 +89,7 @@ const toChatDto = (chatDoc, currentUserId) => {
     return removedParticipants.includes(idStr);
   })();
 
-  return {
+  const dto = {
     id: chatDoc._id.toString(),
     type: chatDoc.type || 'direct',
     title: chatDoc.type === 'group' ? chatDoc.title : null,
@@ -105,7 +105,9 @@ const toChatDto = (chatDoc, currentUserId) => {
       createdAt: block.createdAt,
     })),
     createdAt: chatDoc.createdAt,
-    lastMessage: chatDoc.lastMessage
+    lastMessage: isRemoved
+      ? null
+      : chatDoc.lastMessage
       ? {
           text: chatDoc.lastMessage.text,
           senderId: chatDoc.lastMessage.sender
@@ -123,7 +125,12 @@ const toChatDto = (chatDoc, currentUserId) => {
     ),
     muteUntil: chatDoc.muteUntil,
     rateLimitPerMinute: chatDoc.rateLimitPerMinute ?? null,
+    unreadCount: extra.unreadCount ?? 0,
   };
+
+  dto.unreadCount = isRemoved ? 0 : dto.unreadCount;
+
+  return dto;
 };
 
 const computeUnreadCount = async (chat, userId) => {
@@ -177,8 +184,9 @@ const getUserChats = async ({ userId }) => {
 
   const withUnread = await Promise.all(
     chats.map(async (chat) => {
-      const dto = toChatDto(chat, userId);
-      dto.unreadCount = await computeUnreadCount(chat, userId);
+      const unreadCount = await computeUnreadCount(chat, userId);
+      const dto = toChatDto(chat, userId, { unreadCount });
+      dto.unreadCount = dto.removed ? 0 : unreadCount;
       return dto;
     })
   );

@@ -367,6 +367,12 @@ export const useChatStore = create((set, get) => ({
   },
   async sendMessage(chatId, text, mentions = [], attachments = []) {
     const socket = get().socket;
+    const applyLocalMessage = (message) => {
+      get().addMessage(chatId, message);
+      // Update read time immediately so the UI doesn't show "Unread" line above my own message
+      get().setChatLastRead(chatId, message.createdAt);
+      get().updateChatLastMessage(chatId, message);
+    };
     if (socket) {
       await new Promise((resolve, reject) => {
         socket.emit('message:send', { chatId, text, mentions, attachments }, (response) => {
@@ -382,10 +388,7 @@ export const useChatStore = create((set, get) => ({
       return;
     }
     const { message } = await messagesApi.sendMessage({ chatId, text, mentions, attachments });
-    get().addMessage(chatId, message);
-    // Update read time immediately so the UI doesn't show "Unread" line above my own message
-    get().setChatLastRead(chatId, message.createdAt);
-    get().updateChatLastMessage(chatId, message);
+    applyLocalMessage(message);
   },
   addMessage(chatId, message) {
     set((state) => {
