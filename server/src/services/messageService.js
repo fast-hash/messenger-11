@@ -74,7 +74,7 @@ const toMessageDto = (messageDoc, text) => {
   return {
     id: messageDoc._id.toString(),
     chatId: messageDoc.chat.toString(),
-    senderId: messageDoc.sender.toString(),
+    senderId: senderDto.id,
     sender: senderDto,
     text: messageDoc.deletedForAll ? null : text,
     reactions: (messageDoc.reactions || []).map((reaction) => ({
